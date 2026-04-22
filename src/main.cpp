@@ -277,9 +277,6 @@ int main(){
 
             S.frozen = false;
             print_scoreboard(S, order);
-
-            S.frozen = false;
-            print_scoreboard(S, order);
         } else if(cmd == "QUERY_RANKING"){
             string team_name; cin >> team_name;
             if(!S.team_id.count(team_name)){

@@ -210,12 +210,15 @@ int main(){
             }
         } else if(cmd == "SCROLL"){
             if(!S.frozen){
-                cout << "[Error]Scroll failed: scoreboard has not been frozen.";
+                cout << "[Error]Scroll failed: scoreboard has not been frozen.\n";
                 continue;
             }
             cout << "[Info]Scroll scoreboard.\n";
+            // Scroll first flushes the scoreboard before proceeding
+            cout << "[Info]Flush scoreboard.\n";
             for(auto &t : S.teams) recompute_team_metrics(t);
             auto order = compute_rank_order(S.teams);
+            update_last_ranks(S.teams, order);
             print_scoreboard(S, order);
 
             auto hasFrozen = [&](){

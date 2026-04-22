@@ -227,52 +227,53 @@ int main(){
                 return -1;
             };
 
-            vector<int> prev_order = order;
-
+            // Maintain order incrementally during scroll
             while(hasFrozen()){
-                // lowest-ranked team with frozen problems
                 int chosen_idx = -1;
+                int chosen_pos = -1;
                 for(int i=(int)order.size()-1;i>=0;--i){
                     int ti = order[i];
-                    if(frozen_problem_smallest(S.teams[ti]) != -1){ chosen_idx = ti; break; }
+                    if(frozen_problem_smallest(S.teams[ti]) != -1){ chosen_idx = ti; chosen_pos = i; break; }
                 }
                 if(chosen_idx == -1) break;
                 int p = frozen_problem_smallest(S.teams[chosen_idx]);
                 auto &ps = S.teams[chosen_idx].prob[p];
 
-                // Unfreeze this problem
+                // Unfreeze this problem and merge status
                 ps.frozen = false;
                 ps.submissions_after_freeze = 0;
-                // Merge post-freeze info into solved/unsolved state
                 if(ps.accepted_after_freeze){
                     ps.solved = true;
                     ps.solve_time = ps.time_first_ac_after_freeze;
                     ps.wrong_before_ac = ps.wrong_before_freeze + ps.wrong_after_freeze_before_ac;
                 } else {
-                    // remains unsolved; incorporate wrongs after freeze into total_wrong
                     ps.total_wrong = ps.wrong_before_freeze + ps.wrong_after_freeze_total;
                 }
-                // reset post-freeze accumulators
                 ps.wrong_after_freeze_total = 0;
                 ps.wrong_after_freeze_before_ac = 0;
                 ps.accepted_after_freeze = false;
                 ps.time_first_ac_after_freeze = 0;
 
-                // recompute and detect ranking change for chosen team only
-                for(auto &t : S.teams) recompute_team_metrics(t);
-                auto new_order = compute_rank_order(S.teams);
+                // Recompute metrics only for chosen team
+                recompute_team_metrics(S.teams[chosen_idx]);
 
-                // positions
-                int old_pos = find(prev_order.begin(), prev_order.end(), chosen_idx) - prev_order.begin();
-                int new_pos = find(new_order.begin(), new_order.end(), chosen_idx) - new_order.begin();
-                if(new_pos < old_pos){
-                    int replaced_team = prev_order[new_pos];
-                    cout << S.teams[chosen_idx].name << ' ' << S.teams[replaced_team].name << ' '
-                         << S.teams[chosen_idx].solved_cnt << ' ' << S.teams[chosen_idx].penalty << "\n";
+                // Bubble up in order while beats predecessor
+                int pos = chosen_pos;
+                if(pos>0){
+                    int prev_team_idx = order[pos-1];
+                    if(cmp_team(S.teams[chosen_idx], S.teams[prev_team_idx]) < 0){
+                        cout << S.teams[chosen_idx].name << ' ' << S.teams[prev_team_idx].name << ' '
+                             << S.teams[chosen_idx].solved_cnt << ' ' << S.teams[chosen_idx].penalty << "\n";
+                    }
                 }
-                order = new_order;
-                prev_order = new_order;
+                while(pos>0 && cmp_team(S.teams[chosen_idx], S.teams[order[pos-1]]) < 0){
+                    swap(order[pos], order[pos-1]);
+                    pos--;
+                }
             }
+
+            S.frozen = false;
+            print_scoreboard(S, order);
 
             S.frozen = false;
             print_scoreboard(S, order);
